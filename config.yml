@@ -1,0 +1,45 @@
+lookback_hours: 36
+max_items: 12
+send_empty: true
+
+feeds:
+  - name: Google 뉴스 - 방위사업청
+    url: "https://news.google.com/rss/search?q=%EB%B0%A9%EC%9C%84%EC%82%AC%EC%97%85%EC%B2%AD&hl=ko&gl=KR&ceid=KR:ko"
+  - name: Google 뉴스 - K방산
+    url: "https://news.google.com/rss/search?q=K%EB%B0%A9%EC%82%B0%20OR%20%EB%B0%A9%EC%82%B0%EC%88%98%EC%B6%9C&hl=ko&gl=KR&ceid=KR:ko"
+
+include_any:
+  - 방위사업청
+  - 방사청
+  - 방위산업
+  - 방산
+  - 무기체계
+  - 국방조달
+  - 국방기술
+
+exclude_any:
+  - 연예
+  - 스포츠
+
+categories:
+  방위사업청:
+    - 방위사업청
+    - 방사청
+  방산수출:
+    - 방산수출
+    - 수출
+    - 계약
+    - 수주
+    - 폴란드
+    - 중동
+  연구개발:
+    - 연구개발
+    - R&D
+    - 국방기술
+    - 무기체계
+    - 시험평가
+  산업동향:
+    - 방위산업
+    - 방산
+    - 기업
+
