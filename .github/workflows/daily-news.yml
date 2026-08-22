@@ -1,16 +1,16 @@
-name: DAPA Morning Brief
+name: KCG AI Morning Brief
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 6 * * *"
+    - cron: "0 8 * * 1-5"
       timezone: "Asia/Seoul"
 
 permissions:
   contents: write
 
 concurrency:
-  group: dapa-morning-brief
+  group: kcg-ai-morning-brief
   cancel-in-progress: false
 
 jobs:
@@ -43,4 +43,3 @@ jobs:
           git add data/seen.json
           git diff --cached --quiet || git commit -m "Update sent-news state"
           git push
-

@@ -1,45 +1,113 @@
-lookback_hours: 36
+brief_title: 오늘의 해양경찰 AI 동향
+lookback_hours: 24
 max_items: 12
 send_empty: true
+exclude_sources: [Vietnam.vn]
+
+category_order:
+  - 해양치안 AI
+  - AI 정책·제도
+  - 유관기관·공공안전 AI
+  - AI 산업·핫이슈
+  - AI 도구·업데이트
+  - AI 보안·윤리
+  - AI 학습·교육
+
+category_limits:
+  해양치안 AI: 3
+  AI 정책·제도: 3
+  유관기관·공공안전 AI: 3
+  AI 산업·핫이슈: 2
+  AI 도구·업데이트: 2
+  AI 보안·윤리: 2
+  AI 학습·교육: 1
 
 feeds:
-  - name: Google 뉴스 - 방위사업청
-    url: "https://news.google.com/rss/search?q=%EB%B0%A9%EC%9C%84%EC%82%AC%EC%97%85%EC%B2%AD&hl=ko&gl=KR&ceid=KR:ko"
-  - name: Google 뉴스 - K방산
-    url: "https://news.google.com/rss/search?q=K%EB%B0%A9%EC%82%B0%20OR%20%EB%B0%A9%EC%82%B0%EC%88%98%EC%B6%9C&hl=ko&gl=KR&ceid=KR:ko"
+  - name: 해양경찰 AI
+    category: 해양치안 AI
+    required_any: [해양경찰청, 해양경찰, 해경, 해양치안]
+    url: "https://news.google.com/rss/search?q=(%ED%95%B4%EC%96%91%EA%B2%BD%EC%B0%B0%EC%B2%AD%20OR%20%ED%95%B4%EC%96%91%EA%B2%BD%EC%B0%B0%20OR%20%ED%95%B4%EA%B2%BD)%20(%EC%9D%B8%EA%B3%B5%EC%A7%80%EB%8A%A5%20OR%20AI%20OR%20AX%20OR%20%EB%93%9C%EB%A1%A0%20OR%20%EB%AC%B4%EC%9D%B8%EC%84%A0%EB%B0%95%20OR%20%EC%98%81%EC%83%81%EB%B6%84%EC%84%9D%20OR%20%EB%94%94%EC%A7%80%ED%84%B8%ED%8A%B8%EC%9C%88)&hl=ko&gl=KR&ceid=KR:ko"
+  - name: 국가·공공 AI 정책
+    category: AI 정책·제도
+    required_any: [AI 정책, 인공지능 정책, AI기본법, 인공지능기본법, AI 시행령, 인공지능 시행령, 가이드라인, 공공부문, 정부 AI, 공무원 AI, 공공기관 AI, 과기정통부, 개인정보보호위원회, 국가AI전략위원회, 인공지능책임관, 공공조달]
+    url: "https://news.google.com/rss/search?q=(%EC%9D%B8%EA%B3%B5%EC%A7%80%EB%8A%A5%20OR%20AI)%20(%EC%A0%95%EC%B1%85%20OR%20%EB%B2%95%20OR%20%EC%8B%9C%ED%96%89%EB%A0%B9%20OR%20%EA%B0%80%EC%9D%B4%EB%93%9C%EB%9D%BC%EC%9D%B8%20OR%20%EA%B3%B5%EA%B3%B5%EA%B8%B0%EA%B4%80%20OR%20%EA%B3%BC%EA%B8%B0%EC%A0%95%ED%86%B5%EB%B6%80%20OR%20%EA%B0%9C%EC%9D%B8%EC%A0%95%EB%B3%B4%EB%B3%B4%ED%98%B8%EC%9C%84%EC%9B%90%ED%9A%8C)&hl=ko&gl=KR&ceid=KR:ko"
+  - name: 해양수산부 AI
+    category: 유관기관·공공안전 AI
+    required_any: [해양수산부, 해수부, 해양수산, 스마트항만, 자율운항]
+    url: "https://news.google.com/rss/search?q=(%ED%95%B4%EC%96%91%EC%88%98%EC%82%B0%EB%B6%80%20OR%20%ED%95%B4%EC%88%98%EB%B6%80)%20(%EC%9D%B8%EA%B3%B5%EC%A7%80%EB%8A%A5%20OR%20AI%20OR%20%ED%94%BC%EC%A7%80%EC%BB%ACAI%20OR%20%EC%9E%90%EC%9C%A8%EC%9A%B4%ED%95%AD%20OR%20%EC%8A%A4%EB%A7%88%ED%8A%B8%ED%95%AD%EB%A7%8C%20OR%20%ED%95%B4%EC%96%91%EB%8D%B0%EC%9D%B4%ED%84%B0)&hl=ko&gl=KR&ceid=KR:ko"
+  - name: 경찰청 치안 AI
+    category: 유관기관·공공안전 AI
+    required_any: [경찰청, 경찰, 치안, 범죄, 수사]
+    url: "https://news.google.com/rss/search?q=(%EA%B2%BD%EC%B0%B0%EC%B2%AD%20OR%20%EC%B9%98%EC%95%88)%20(%EC%9D%B8%EA%B3%B5%EC%A7%80%EB%8A%A5%20OR%20AI%20OR%20%EC%B9%98%EC%95%88AI%20OR%20%EC%98%81%EC%83%81%EB%B6%84%EC%84%9D%20OR%20%EC%98%88%EC%B8%A1%EC%B9%98%EC%95%88%20OR%20%EB%94%A5%ED%8E%98%EC%9D%B4%ED%81%AC)&hl=ko&gl=KR&ceid=KR:ko"
+  - name: 소방청 재난 AI
+    category: 유관기관·공공안전 AI
+    required_any: [소방청, 소방, 119, 화재, 재난]
+    url: "https://news.google.com/rss/search?q=(%EC%86%8C%EB%B0%A9%EC%B2%AD%20OR%20%EC%86%8C%EB%B0%A9%20OR%20119)%20(%EC%9D%B8%EA%B3%B5%EC%A7%80%EB%8A%A5%20OR%20AI%20OR%20%EC%A7%80%EB%8A%A5%ED%98%95%20OR%20%EB%94%94%EC%A7%80%ED%84%B8%ED%8A%B8%EC%9C%88%20OR%20%EC%9E%AC%EB%82%9C%EC%98%88%EC%B8%A1)&hl=ko&gl=KR&ceid=KR:ko"
+  - name: AI 산업·핫이슈
+    category: AI 산업·핫이슈
+    required_any: [출시, 공개, 모델, 산업, 특허, 연구, 시장, 투자, 인수, 기술]
+    url: "https://news.google.com/rss/search?q=(%EC%9D%B8%EA%B3%B5%EC%A7%80%EB%8A%A5%20OR%20%22%EC%83%9D%EC%84%B1%ED%98%95%20AI%22%20OR%20AI)%20(%EC%B6%9C%EC%8B%9C%20OR%20%EA%B3%B5%EA%B0%9C%20OR%20%EB%AA%A8%EB%8D%B8%20OR%20%EC%82%B0%EC%97%85%20OR%20%ED%8A%B9%ED%97%88%20OR%20%EC%97%B0%EA%B5%AC%20OR%20%EC%8B%9C%EC%9E%A5%20OR%20%ED%88%AC%EC%9E%90%20OR%20%EC%9D%B8%EC%88%98)&hl=ko&gl=KR&ceid=KR:ko"
+  - name: AI 도구 업데이트
+    category: AI 도구·업데이트
+    required_any: [업데이트, 출시, 신기능, 공개, 사용법, 버전, 기능]
+    exclude_sources: [Vietnam.vn]
+    url: "https://news.google.com/rss/search?q=(ChatGPT%20OR%20Gemini%20OR%20Claude%20OR%20Copilot%20OR%20NotebookLM%20OR%20Perplexity)%20(%EC%97%85%EB%8D%B0%EC%9D%B4%ED%8A%B8%20OR%20%EC%B6%9C%EC%8B%9C%20OR%20%EC%8B%A0%EA%B8%B0%EB%8A%A5%20OR%20%EA%B3%B5%EA%B0%9C%20OR%20%EC%82%AC%EC%9A%A9%EB%B2%95)&hl=ko&gl=KR&ceid=KR:ko"
+  - name: AI 보안·윤리·법제
+    category: AI 보안·윤리
+    required_any: [보안, 개인정보, 저작권, 윤리, 딥페이크, 허위조작정보, 환각, 고영향, 책임성, 사이버]
+    url: "https://news.google.com/rss/search?q=(%EC%9D%B8%EA%B3%B5%EC%A7%80%EB%8A%A5%20OR%20%EC%83%9D%EC%84%B1%ED%98%95AI%20OR%20AI)%20(%EB%B3%B4%EC%95%88%20OR%20%EA%B0%9C%EC%9D%B8%EC%A0%95%EB%B3%B4%20OR%20%EC%A0%80%EC%9E%91%EA%B6%8C%20OR%20%EC%9C%A4%EB%A6%AC%20OR%20%EB%94%A5%ED%8E%98%EC%9D%B4%ED%81%AC%20OR%20%ED%99%98%EA%B0%81%20OR%20%EA%B3%A0%EC%98%81%ED%96%A5)&hl=ko&gl=KR&ceid=KR:ko"
+  - name: 공공 AI 교육·가이드
+    category: AI 학습·교육
+    required_any: [가이드, 가이드북, 사례집, 교육자료, AI 교육, 인공지능 교육, AI 용어, 인공지능 용어, 매뉴얼]
+    url: "https://news.google.com/rss/search?q=(%EC%9D%B8%EA%B3%B5%EC%A7%80%EB%8A%A5%20OR%20AI)%20(%EA%B0%80%EC%9D%B4%EB%93%9C%20OR%20%EC%82%AC%EB%A1%80%EC%A7%91%20OR%20%EA%B5%90%EC%9C%A1%20OR%20%EC%9A%A9%EC%96%B4%20OR%20%EB%B3%B4%EA%B3%A0%EC%84%9C)%20(NIA%20OR%20%ED%95%9C%EA%B5%AD%EC%A7%80%EB%8A%A5%EC%A0%95%EB%B3%B4%EC%82%AC%ED%9A%8C%EC%A7%84%ED%9D%A5%EC%9B%90%20OR%20AI%ED%97%88%EB%B8%8C)&hl=ko&gl=KR&ceid=KR:ko"
 
-include_any:
-  - 방위사업청
-  - 방사청
-  - 방위산업
-  - 방산
-  - 무기체계
-  - 국방조달
-  - 국방기술
-
-exclude_any:
-  - 연예
-  - 스포츠
+required_any:
+  - AI
+  - 인공지능
+  - 생성형 AI
+  - AX
+  - 머신러닝
+  - 딥러닝
+  - 대규모 언어모델
+  - LLM
+  - 컴퓨터 비전
+  - 영상분석
+  - 디지털 트윈
+  - 자율운항
+  - 지능형
+  - ChatGPT
+  - Gemini
+  - Claude
+  - Copilot
+  - NotebookLM
+  - Perplexity
 
 categories:
-  방위사업청:
-    - 방위사업청
-    - 방사청
-  방산수출:
-    - 방산수출
-    - 수출
-    - 계약
-    - 수주
-    - 폴란드
-    - 중동
-  연구개발:
-    - 연구개발
-    - R&D
-    - 국방기술
-    - 무기체계
-    - 시험평가
-  산업동향:
-    - 방위산업
-    - 방산
-    - 기업
+  해양치안 AI: [해양경찰청, 해양경찰, 해경, 해양치안, 수색구조, 해양오염, 선종식별, 항적, VTS]
+  AI 정책·제도: [AI기본법, 인공지능기본법, 시행령, 정책, 가이드라인, 공공부문, 국가AI전략위원회, 인공지능책임관, 공공조달]
+  유관기관·공공안전 AI: [해양수산부, 해수부, 경찰청, 소방청, 행정안전부, 재난안전, 치안, 119]
+  AI 산업·핫이슈: [생성형 AI, LLM, 멀티모달, 컴퓨터 비전, 디지털 트윈, 피지컬 AI, 온디바이스 AI, 엣지 AI, 드론, 무인선박, 자율운항, 위성, 로봇, 특허]
+  AI 도구·업데이트: [ChatGPT, Gemini, Claude, Copilot, NotebookLM, Perplexity, AI 에이전트, RAG, 업데이트, 신기능]
+  AI 보안·윤리: [개인정보, 보안, 사이버, 저작권, 윤리, 책임성, 딥페이크, 허위조작정보, 환각, 고영향 AI]
+  AI 학습·교육: [교육, 강의, 가이드, 가이드북, 사례집, 용어, 보고서, 매뉴얼]
 
+exclude_any:
+  - 주가 전망
+  - 목표주가
+  - 매수 추천
+  - 코인
+  - 암호화폐
+  - 연예
+  - 스포츠
+  - 운세
+  - 맛집
+  - 부동산
+  - 채용 공고
+  - 수강생 모집
+  - 유료 세미나
+  - 이벤트 경품
+
+learning:
+  enabled: true
+  weekday: 0
+  path: learning.yml
