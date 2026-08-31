@@ -2,6 +2,11 @@ name: KCG AI Morning Brief
 
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "보내지 않고 로그로만 확인"
+        type: boolean
+        default: true
   schedule:
     - cron: "0 8 * * 1-5"
       timezone: "Asia/Seoul"
@@ -20,12 +25,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 수집·선별 엔진. 주간 동향지와 같은 것을 써서 가중치를 한 벌만 관리한다.
+      - name: 엔진 가져오기
+        uses: actions/checkout@v4
+        with:
+          repository: eeejy/gov-ai-trendletter
+          path: engine
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
 
-      - run: pip install -r requirements.txt
+      - run: pip install -r requirements.txt -r engine/requirements.txt
 
       - name: Run tests
         run: python -m unittest discover -s tests
@@ -34,9 +46,14 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python -m src.main
+          TRENDLETTER_ROOT: engine
+        # TRENDLETTER_ROOT 가 engine/ 의 설정·온톨로지를 쓰게 한다.
+        # 수동 실행은 기본이 미발송이라 결과를 먼저 보고 판단할 수 있다.
+        run: |
+          python -m src.main ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
 
       - name: Save deduplication state
+        if: github.event.inputs.dry_run != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
