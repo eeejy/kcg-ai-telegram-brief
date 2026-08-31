@@ -218,6 +218,47 @@ def collect(config: dict[str, Any], now: datetime) -> list[Article]:
     return unique
 
 
+def collect_via_engine(config: dict[str, Any], now: datetime) -> list[Article] | None:
+    """동향지 엔진으로 수집·채점한다. 못 쓰면 None (기존 RSS 로 돌아간다).
+
+    바뀌는 것: 구글 뉴스 RSS 아홉 갈래 → 기관 1차 출처 15곳 + 뉴스 검색,
+    낱말 세기 → 업무 관련도 가중치, 매체별 중복 → 사건 단위 통합.
+    """
+    from . import engine
+
+    rows = engine.collect_ranked(
+        hours=int(config.get("lookback_hours", 24)),
+        min_score=float(config.get("min_score", 7.0)),
+        exclude_tracks=tuple(config.get("exclude_tracks", ["dev"])),
+    )
+    if rows is None:
+        return None
+
+    keyword_map = config.get("categories", {})
+    out: list[Article] = []
+    for row in rows:
+        published = row.get("published")
+        if published is None:
+            published = now
+        elif published.tzinfo is None:
+            published = published.replace(tzinfo=SEOUL)
+        link = clean_link(row.get("link") or "")
+        title = clean_title(row.get("title") or "")
+        if not title or not link:
+            continue
+        out.append(
+            Article(
+                title=title,
+                link=link,
+                source=row.get("source") or "",
+                published=published,
+                category=engine.category_of(row, keyword_map),
+                fingerprint=fingerprint(title, link),
+            )
+        )
+    return out
+
+
 def relative_age(published: datetime, now: datetime) -> str:
     seconds = max(0, int((now - published).total_seconds()))
     if seconds < 3600:
@@ -241,8 +282,9 @@ def load_learning(config: dict[str, Any], now: datetime) -> dict[str, str] | Non
 
 def trend_tags(articles: list[Article], config: dict[str, Any], limit: int = 5) -> list[str]:
     counts: dict[str, int] = {}
+    # YAML 은 따옴표 없는 119 를 정수로 읽는다. 문자열로 맞춰 둔다.
     keywords = [
-        keyword
+        str(keyword)
         for category_keywords in config.get("categories", {}).values()
         for keyword in category_keywords
     ]
@@ -377,7 +419,12 @@ def run(dry_run: bool = False) -> int:
     config = load_yaml()
     now = datetime.now(timezone.utc)
     seen = prune_seen(load_seen(), now)
-    articles = collect(config, now)
+    articles = collect_via_engine(config, now)
+    if articles is None:
+        articles = collect(config, now)          # 엔진이 없으면 예전 RSS 방식
+        LOG.info("SOURCE rss")
+    else:
+        LOG.info("SOURCE engine")
     fresh = select_fresh(articles, seen, config)
     LOG.info("FILTER collected=%d fresh=%d", len(articles), len(fresh))
 

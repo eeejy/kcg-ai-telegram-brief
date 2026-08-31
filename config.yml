@@ -1,5 +1,9 @@
 brief_title: 오늘의 해양경찰 AI 동향
 lookback_hours: 24
+# 엔진 점수가 이 밑이면 싣지 않는다. feeds 는 엔진을 못 쓸 때의 대비책으로 남겨 둔다.
+min_score: 7.0
+# 개발자 트랙(GitHub·Reddit)은 싣지 않는다. 현장 직원이 읽는 물건이다.
+exclude_tracks: [dev]
 max_items: 12
 send_empty: true
 exclude_sources: [Vietnam.vn]
