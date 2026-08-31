@@ -62,16 +62,50 @@ def _worth_sending(row: dict[str, Any]) -> bool:
     title = row.get("title") or ""
     if any(k in title for k in _DROP_TITLE):
         return False
-    if any(k in title for k in _VENDOR_HINT) and not row.get("groups"):
+    # 벤더가 자사 제품을 알리는 기사. 업무 관련 낱말이 본문에 있다고 해서
+    # 봐줄 이유가 없다. 기관이 주체로 제목에 나올 때만 남긴다.
+    if any(k in title for k in _VENDOR_HINT) and not _has_agency(title):
         return False
     if row.get("groups"):
         return True
     return float(row.get("score", 0)) >= float(row.get("solo_bar", 10.0))
 
 
+# 벤더 기사와 기관 발표를 가르는 기준. 구체적인 기관 이름만 센다.
+# '공공기관'·'정부' 같은 일반어는 벤더 홍보 제목에도 흔히 들어간다 —
+# 실측: 「비즈플레이, 공공기관 업무 혁신」이 기관 발표로 인정됐다.
+_AGENCY_NAMES = (
+    "해양경찰청", "해양경찰", "해경", "해양수산부", "해수부",
+    "경찰청", "소방청", "국가수사본부",
+    "과기정통부", "과학기술정보통신부", "행정안전부", "행안부",
+    "국무조정실", "국가AI전략위", "개인정보보호위", "감사원",
+    "국방부", "관세청", "산림청", "기상청", "국토교통부", "교육부",
+)
+
+
+def _has_agency(title: str) -> bool:
+    return any(w in title for w in _AGENCY_NAMES)
+
+
+def _is_near(row: dict[str, Any]) -> bool:
+    """우리청·유사기관 소식인가.
+
+    본문에만 낱말이 있는 경우는 세지 않는다. 문턱을 낮춰 주는 대접이라
+    확실할 때만 인정한다 — 제목에 기관 이름이 있어야 한다.
+    """
+    if not (_NEAR_GROUPS & set(row.get("groups") or [])):
+        return False
+    return category_of(row) in ("우리청·해양", "유사·인접기관")
+
+
+# 우리와 가까운 기관의 소식. 이건 점수가 낮아도 매일 챙겨야 한다.
+_NEAR_GROUPS = {"직접", "현장임무", "유사기관", "인접기관"}
+
+
 def collect_ranked(hours: int, min_score: float,
                    exclude_tracks: tuple = ("dev",),
-                   solo_bar: float = 10.0) -> list[dict[str, Any]] | None:
+                   solo_bar: float = 10.0,
+                   near_min_score: float = 5.0) -> list[dict[str, Any]] | None:
     """엔진으로 수집·통합·채점한 결과를 돌려준다.
 
     돌려주는 항목: title, link, source, published, score, track, groups
@@ -97,8 +131,14 @@ def collect_ranked(hours: int, min_score: float,
 
     # 개발자 트랙(GitHub·Reddit)은 일간 브리핑에 싣지 않는다.
     # 이건 현장 직원이 읽는 물건이고, 개발자 신호는 주간 동향지에서 종합해 다룬다.
+    # 우리청·유사기관 소식은 문턱을 낮춘다. 같은 잣대로 재면 큰 산업 소식에
+    # 밀려 정작 우리 일이 빠진다. 지난 11개 호에서 가장 중요하게 다룬 축이다.
+    def bar(c) -> float:
+        near = _is_near({"title": c.lead.title, "groups": c.work_groups})
+        return near_min_score if near else min_score
+
     ranked = [c for c in clusters
-              if c.score >= min_score and c.lead.track not in exclude_tracks]
+              if c.score >= bar(c) and c.lead.track not in exclude_tracks]
 
     # 수집기에 따라 오래된 항목이 딸려 온다(GitHub 은 저장소 갱신일 기준).
     # 하루치 브리핑에 20일 전 글이 섞이면 안 된다.
@@ -124,45 +164,81 @@ def collect_ranked(hours: int, min_score: float,
         )
     for row in out:
         row["solo_bar"] = solo_bar
+        row["near"] = _is_near(row)
+    # 가까운 기관 소식을 앞에 둔다. 분야별 상한에 걸릴 때 이쪽이 먼저 들어간다.
+    out.sort(key=lambda r: (not r["near"], -float(r.get("score", 0))))
     kept = [row for row in out if _worth_sending(row)]
     LOG.info("엔진 수집 %d건 → 클러스터 %d개 → %.1f점 이상 %d건 → 선별 %d건",
              len(articles), len(clusters), min_score, len(out), len(kept))
     return kept
 
 
-# 엔진의 업무 관련도 그룹·트랙을 브리프 카테고리로 옮긴다.
-# 브리프는 읽는 사람 기준으로 묶고, 엔진은 업무 기준으로 묶는다.
-_GROUP_TO_CATEGORY = [
-    # 해양치안 칸은 제목에 해양 낱말이 있을 때만 쓴다. 그룹으로는 보내지 않는다.
-    ("유사기관", "유관기관·공공안전 AI"),
-    ("인접기관", "유관기관·공공안전 AI"),
-    ("공공전환", "AI 정책·제도"),
-    ("타기관사례", "유관기관·공공안전 AI"),
-    ("인재교육", "AI 학습·교육"),
-    ("인프라", "AI 산업·핫이슈"),
-    ("현장기술", "AI 산업·핫이슈"),
+# 분야는 동향지가 보는 관점을 그대로 쓴다.
+# 동향지는 "무슨 기술이냐" 가 아니라 "우리와 얼마나 가까우냐" 로 본다.
+# 우리청 → 유사·인접기관 → 범정부 정책 → 타 기관 사례 → 산업·기술 순이다.
+# 이 순서가 곧 매일 챙겨야 하는 순서이기도 하다.
+ORDER = [
+    "우리청·해양",
+    "유사·인접기관",
+    "범정부 AI 정책",
+    "타 기관 도입사례",
+    "산업·기술 동향",
 ]
-_TRACK_TO_CATEGORY = {
-    "policy": "AI 정책·제도",
-    "industry": "AI 산업·핫이슈",
-    "dev": "AI 도구·업데이트",
+ICONS = {
+    "우리청·해양": "\u2693",          # 닻
+    "유사·인접기관": "\U0001F6A8",    # 경광등
+    "범정부 AI 정책": "\U0001F3DB\uFE0F",
+    "타 기관 도입사례": "\U0001F3E2",
+    "산업·기술 동향": "\U0001F525",
 }
 
+# 업무 관련도 그룹 → 분야. 위에 있는 것이 이긴다.
+# 그룹은 본문까지 훑어 잡히므로 기관 분야로 보내지 않는다. 기관 분야는
+# 제목에 이름이 있을 때만 간다. 실측: 「AI데이터센터 재생에너지」가 본문의
+# '연안' 때문에 현장임무로 걸려 우리청 소식으로 분류됐다.
+_BY_GROUP = [
+    ("공공전환", "범정부 AI 정책"),
+    ("인재교육", "범정부 AI 정책"),
+    ("타기관사례", "타 기관 도입사례"),
+    ("현장기술", "산업·기술 동향"),
+    ("인프라", "산업·기술 동향"),
+]
 
-def category_of(row: dict[str, Any], keyword_map: dict[str, list[str]]) -> str:
-    """카테고리를 정한다.
+# 그룹이 하나도 안 걸렸을 때 제목으로 본다. 기관 이름이 가장 확실한 단서다.
+_BY_TITLE = [
+    (("해양경찰", "해경", "해양수산부", "해수부", "해상", "선박", "항만", "연안"),
+     "우리청·해양"),
+    (("경찰청", "소방청", "119", "국가수사본부", "치안", "소방"),
+     "유사·인접기관"),
+    # 기관 이름만 둔다. '정부'·'공공기관'·'공무원' 같은 일반어는 회사 홍보
+    # 제목에도 흔히 들어가 정책 소식으로 둔갑한다.
+    (("과기정통부", "과학기술정보통신부", "행정안전부", "행안부", "국무조정실",
+      "국가AI전략위", "국가인공지능전략위", "개인정보보호위", "감사원",
+      "대통령실", "청와대", "국회"),
+     "범정부 AI 정책"),
+    (("국방부", "방위사업청", "관세청", "산림청", "기상청", "국토교통부",
+      "교육부", "고용노동부", "보건복지부", "특허청", "조달청", "지자체"),
+     "타 기관 도입사례"),
+]
 
-    제목에 드러난 낱말을 먼저 본다. 업무 관련도 그룹은 본문까지 훑어 잡히므로
-    분류에 쓰면 엉뚱한 데로 간다 — 실측: 「AI데이터센터 재생에너지」가
-    현장임무 그룹에 걸려 해양치안으로 분류됐다. 그룹은 낱말이 하나도 안 걸릴
-    때만 참고하고, 그때도 해양치안처럼 좁은 칸에는 넣지 않는다.
+
+def category_of(row: dict[str, Any], keyword_map: dict[str, list[str]] | None = None) -> str:
+    """분야를 정한다. 제목의 기관 이름을 먼저 보고, 없으면 업무 관련도를 본다.
+
+    업무 관련도 그룹은 본문까지 훑어 잡히므로 분류에 먼저 쓰면 엉뚱해진다.
+    실측: 「AI데이터센터 재생에너지」가 본문의 '연안' 때문에 현장임무로 걸렸다.
     """
-    text = (row.get("title") or "").lower()
-    for category, keywords in (keyword_map or {}).items():
-        if any(str(k).lower() in text for k in keywords):
+    title = row.get("title") or ""
+    for words, category in _BY_TITLE:
+        if any(w in title for w in words):
             return category
     groups = set(row.get("groups") or [])
-    for name, category in _GROUP_TO_CATEGORY:
+    for name, category in _BY_GROUP:
         if name in groups:
+            # 정책 분야는 기관이 제목에 주체로 나올 때만 인정한다.
+            # 본문에 '공공기관' 이 있다고 정책 소식은 아니다 — 실측:
+            # 「비즈플레이, 공공기관 업무 혁신」은 회사 홍보 기사였다.
+            if category == "범정부 AI 정책" and not _has_agency(title):
+                return "산업·기술 동향"
             return category
-    return _TRACK_TO_CATEGORY.get(row.get("track"), "AI 산업·핫이슈")
+    return "산업·기술 동향"

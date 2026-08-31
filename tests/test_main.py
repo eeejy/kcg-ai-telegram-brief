@@ -56,16 +56,48 @@ class BriefTests(unittest.TestCase):
         self.assertIn("시험 언론사", message)
         self.assertIn("https://example.com/news", message)
 
-    def test_monday_message_contains_learning_term(self) -> None:
-        monday = datetime(2026, 8, 24, 0, 0, tzinfo=timezone.utc)
-        config = {
-            "brief_title": "오늘의 해양경찰 AI 동향",
-            "categories": {},
-            "learning": {"enabled": True, "weekday": 0, "path": "learning.yml"},
-        }
-        message = "\n".join(format_messages([], monday, config))
-        self.assertIn("이번 주 AI 용어", message)
-        self.assertIn("해양경찰 관점", message)
+    def test_category_follows_work_relevance(self) -> None:
+        """분야는 동향지와 같은 관점(우리와 얼마나 가까운가)으로 나뉜다."""
+        from src.engine import category_of
+
+        cases = [
+            ({"title": "해양경찰청, AI 함정 청사진"}, "우리청·해양"),
+            ({"title": "경찰청, AI 수사자료 분석 솔루션 보급"}, "유사·인접기관"),
+            ({"title": "과기정통부, AI 윤리원칙 제정"}, "범정부 AI 정책"),
+            ({"title": "산림청, 산불 감시 AI 도입"}, "타 기관 도입사례"),
+            ({"title": "구글, 새 AI 모델 공개"}, "산업·기술 동향"),
+            # 회사가 주어인 기사는 '공공기관' 이 붙어도 정책이 아니다
+            ({"title": "비즈플레이, 공공기관 업무 혁신",
+              "groups": ["공공전환"]}, "산업·기술 동향"),
+        ]
+        for row, expected in cases:
+            self.assertEqual(category_of(row), expected, row["title"])
+
+    def test_near_agency_uses_lower_bar(self) -> None:
+        """우리청·유사기관 소식은 점수가 낮아도 실린다."""
+        from src.engine import _NEAR_GROUPS, _is_near
+
+        # 제목에 기관 이름이 있고 업무 관련도도 걸려야 인정한다
+        self.assertTrue(_is_near(
+            {"title": "경찰청, AI 수사 솔루션 보급", "groups": ["유사기관"]}))
+        self.assertTrue(_is_near(
+            {"title": "해양경찰청 AI 함정", "groups": ["직접", "인프라"]}))
+        # 본문에만 걸린 경우는 인정하지 않는다 (제목에 기관이 없다)
+        self.assertFalse(_is_near(
+            {"title": "AI데이터센터 재생에너지 논란", "groups": ["현장임무"]}))
+        self.assertFalse(_is_near({"title": "구글 새 모델", "groups": []}))
+        self.assertIn("인접기관", _NEAR_GROUPS)
+
+    def test_vendor_promo_dropped(self) -> None:
+        """벤더 자사 홍보는 뺀다. 기관이 제목에 주체로 나올 때만 남긴다."""
+        from src.engine import _worth_sending
+
+        self.assertFalse(_worth_sending(
+            {"title": "비즈플레이, 공공기관 업무 혁신 알린다", "groups": ["공공전환"]}))
+        self.assertFalse(_worth_sending(
+            {"title": "NC AI, 사우디서 K-AI 기술력 알린다", "groups": ["인프라"]}))
+        self.assertTrue(_worth_sending(
+            {"title": "과기정통부, 민간과 업무협약 체결", "groups": ["공공전환"]}))
 
     def test_select_fresh_respects_global_and_category_limits(self) -> None:
         now = datetime(2026, 8, 22, 0, 0, tzinfo=timezone.utc)

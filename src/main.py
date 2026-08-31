@@ -26,15 +26,8 @@ CONFIG_PATH = ROOT / "config.yml"
 SEEN_PATH = ROOT / "data" / "seen.json"
 TRACKING_PARAMS = {"fbclid", "gclid", "ocid", "ref", "source"}
 SEOUL = ZoneInfo("Asia/Seoul")
-CATEGORY_ICONS = {
-    "해양치안 AI": "⚓",
-    "AI 정책·제도": "🏛️",
-    "유관기관·공공안전 AI": "🚨",
-    "AI 산업·핫이슈": "🔥",
-    "AI 도구·업데이트": "🛠️",
-    "AI 보안·윤리": "🛡️",
-    "AI 학습·교육": "🎓",
-}
+from src import engine as _engine  # noqa: E402
+CATEGORY_ICONS = _engine.ICONS
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 LOG = logging.getLogger("kcg-ai-brief")
@@ -231,6 +224,7 @@ def collect_via_engine(config: dict[str, Any], now: datetime) -> list[Article] |
         min_score=float(config.get("min_score", 7.0)),
         exclude_tracks=tuple(config.get("exclude_tracks", ["dev"])),
         solo_bar=float(config.get("solo_bar", 10.0)),
+        near_min_score=float(config.get("near_min_score", 5.0)),
     )
     if rows is None:
         return None
@@ -286,7 +280,7 @@ def trend_tags(articles: list[Article], config: dict[str, Any], limit: int = 5) 
     # YAML 은 따옴표 없는 119 를 정수로 읽는다. 문자열로 맞춰 둔다.
     keywords = [
         str(keyword)
-        for category_keywords in config.get("categories", {}).values()
+        for category_keywords in config.get("keyword_pool", {}).values()
         for keyword in category_keywords
     ]
     for keyword in keywords:
@@ -358,13 +352,6 @@ def format_messages(
             )
         blocks.append("\n".join(section_lines))
 
-    learning_item = load_learning(config, now)
-    if learning_item:
-        blocks.append(
-            "\n━━━━━━━━━━━━━━━\n\n🧠 <b>이번 주 AI 용어</b>\n"
-            f"<b>{html.escape(learning_item['term'])}</b> — {html.escape(learning_item['definition'])}\n"
-            f"💡 <b>해양경찰 관점:</b> {html.escape(learning_item['relevance'])}"
-        )
 
     tags = trend_tags(articles, config)
     if tags:
