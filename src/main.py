@@ -230,6 +230,7 @@ def collect_via_engine(config: dict[str, Any], now: datetime) -> list[Article] |
         hours=int(config.get("lookback_hours", 24)),
         min_score=float(config.get("min_score", 7.0)),
         exclude_tracks=tuple(config.get("exclude_tracks", ["dev"])),
+        solo_bar=float(config.get("solo_bar", 10.0)),
     )
     if rows is None:
         return None

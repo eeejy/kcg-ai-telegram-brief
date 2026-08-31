@@ -36,8 +36,42 @@ def _prepare() -> bool:
     return True
 
 
+# 일간 브리핑은 하루에 몇 건만 나가므로, 애매한 것은 아예 빼는 편이 낫다.
+# 아래는 AI 기사이긴 하나 우리 업무와 닿지 않는 것들이다.
+_DROP_TITLE = (
+    "대학", "캠퍼스", "교수", "학과", "총장", "학생",          # 대학 소식
+    "채용", "모집", "공모전 개최", "챔피언십", "경품", "이벤트",  # 모집·행사
+    "수강", "수료", "특강 신청",
+    "주가", "목표주가", "코스닥", "상장", "투자 유치", "시리즈 A",  # 증시·투자
+    "출시 기념", "할인", "무료 체험", "프로모션",                # 홍보
+)
+# 벤더가 자사 제품을 알리는 기사. 기관이 주체가 아니면 뺀다.
+_VENDOR_HINT = (
+    "구축 사업자로 선정", "공급 계약", "수주", "도입 사례로 소개",
+    "알린다", "선보인다", "출사표", "맞손", "업무협약", "MOU",
+    "공동 개발 추진", "사업자로 선정", "파트너십",
+)
+
+
+def _worth_sending(row: dict[str, Any]) -> bool:
+    """하루치에 실을 값어치가 있는지 본다.
+
+    업무 관련도가 하나라도 걸렸으면 싣는다. 하나도 안 걸렸다면 점수가
+    확실히 높을 때만 싣는다. 애매한 것을 넣느니 건수가 적은 편이 낫다.
+    """
+    title = row.get("title") or ""
+    if any(k in title for k in _DROP_TITLE):
+        return False
+    if any(k in title for k in _VENDOR_HINT) and not row.get("groups"):
+        return False
+    if row.get("groups"):
+        return True
+    return float(row.get("score", 0)) >= float(row.get("solo_bar", 10.0))
+
+
 def collect_ranked(hours: int, min_score: float,
-                   exclude_tracks: tuple = ("dev",)) -> list[dict[str, Any]] | None:
+                   exclude_tracks: tuple = ("dev",),
+                   solo_bar: float = 10.0) -> list[dict[str, Any]] | None:
     """엔진으로 수집·통합·채점한 결과를 돌려준다.
 
     돌려주는 항목: title, link, source, published, score, track, groups
@@ -88,9 +122,12 @@ def collect_ranked(hours: int, min_score: float,
                 "outlets": len(c.outlets),
             }
         )
-    LOG.info("엔진 수집 %d건 → 클러스터 %d개 → %.1f점 이상 %d건",
-             len(articles), len(clusters), min_score, len(out))
-    return out
+    for row in out:
+        row["solo_bar"] = solo_bar
+    kept = [row for row in out if _worth_sending(row)]
+    LOG.info("엔진 수집 %d건 → 클러스터 %d개 → %.1f점 이상 %d건 → 선별 %d건",
+             len(articles), len(clusters), min_score, len(out), len(kept))
+    return kept
 
 
 # 엔진의 업무 관련도 그룹·트랙을 브리프 카테고리로 옮긴다.
